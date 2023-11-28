@@ -26,6 +26,11 @@
 #define FRAMING_ERROR (1<<FE0)
 #define PARITY_ERROR (1<<UPE0)
 #define DATA_OVERRUN (1<<DOR0)
+#define RX_BUFFER_SIZE0 8
+char rx_buffer0[RX_BUFFER_SIZE0];
+unsigned char rx_wr_index0 = 0, rx_rd_index0 = 0;
+unsigned char rx_counter0=0;
+bool rx_buffer_overflow0;
 bool flag =0;
 char receive;
 
@@ -112,7 +117,15 @@ USART_Transmit(13);
 
 
 ISR(USART_RX_vect){
-      char status=UCSR0A;
+  char status=UCSR0A, data=UDR0 ; // le status doit être lu avant le registre UDR0.
+  rx_buffer0[rx_wr_index0++]=data;
+ if (rx_wr_index0 == RX_BUFFER_SIZE0) rx_wr_index0=0;
+ if (++rx_counter0 == RX_BUFFER_SIZE0)
+ {
+ rx_counter0=0;
+ rx_buffer_overflow0=1;
+ }
+
  if ((status & (FRAMING_ERROR | PARITY_ERROR | DATA_OVERRUN))==0){
 flag = 1;
 receive = UDR0; 
@@ -122,6 +135,17 @@ else{
   UDR0;
   USART_putsln("erreur !");
 }
+}
+char getBuffer(void)
+{
+ char data;
+ while (rx_counter0==0); // attendre un caractère dans le buffer
+ data=rx_buffer0[rx_rd_index0++];
+ if (rx_rd_index0 == RX_BUFFER_SIZE0) rx_rd_index0=0;
+ cli();
+ --rx_counter0;
+ sei();
+ return data;
 }
 
 /*
@@ -144,6 +168,7 @@ int main() {
     while(1){
     if(flag){
       USART_Transmit(receive);
+      USART_Transmit(getBuffer());
   flag = 0;
     }
   _delay_ms(1);
