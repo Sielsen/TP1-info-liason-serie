@@ -86,12 +86,12 @@ else{
 }
 
  }
+
 /*
 *
 *fonction pour ecrire un sting 
 *
 */
-
 void USART_puts(unsigned char *str)
 {
 do
@@ -99,6 +99,11 @@ do
 USART_Transmit(*str);
 } while (*++str!=0);
 }
+/*
+*
+*fonction pour ecrire un sting avec retour charriot
+*
+*/
 void USART_putsln(unsigned char *str){
 USART_puts(str);
 USART_Transmit(10);
@@ -111,8 +116,8 @@ ISR(USART_RX_vect){
  if ((status & (FRAMING_ERROR | PARITY_ERROR | DATA_OVERRUN))==0){
 flag = 1;
 receive = UDR0; 
-
 }
+
 else{
   UDR0;
   USART_putsln("erreur !");
@@ -124,7 +129,17 @@ else{
  *
  */
 int main() {
+  /*
+  *
+  *initialisation du baude rate
+  *
+  */
     USART_Init(MYUBRR);
+      /*
+  *
+  *autoriaton des interruptions
+  *
+  */
     sei();
     while(1){
     if(flag){
