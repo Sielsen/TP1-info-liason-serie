@@ -23,6 +23,9 @@
 #define FOSC 16000000 // Clock Speed
 #define BAUD 9600
 #define MYUBRR FOSC/16/BAUD-1
+#define FRAMING_ERROR (1<<FE0)
+#define PARITY_ERROR (1<<UPE0)
+#define DATA_OVERRUN (1<<DOR0)
 bool flag =0;
 
 /*
@@ -63,6 +66,21 @@ while (!(UCSR0A & (1<<RXC0)))
 /* Get and return received data from buffer */
 return UDR0;
 }
+
+void USART_puts(unsigned char *str)
+{
+do
+{
+USART_Transmit(*str);
+} while (*++str!=0);
+}
+void USART_putsln(unsigned char *str){
+USART_puts(str);
+USART_Transmit(10);
+USART_Transmit(13);
+}
+
+
 ISR(USART_RX_vect){
     flag =1;
   }
@@ -72,9 +90,12 @@ ISR(USART_RX_vect){
  *
  */
 int main() {
+  char *str = "iut";
     USART_Init(MYUBRR);
     sei();
     while(1){
+      USART_putsln("IUT");
+       _delay_ms(500);
     if(flag){
       USART_Transmit(UDR0+1);
   flag = 0;
