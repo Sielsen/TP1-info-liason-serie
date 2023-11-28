@@ -27,6 +27,7 @@
 #define PARITY_ERROR (1<<UPE0)
 #define DATA_OVERRUN (1<<DOR0)
 bool flag =0;
+char receive;
 
 /*
  * INITIALISATION DE la liaison serie
@@ -51,7 +52,11 @@ void USART_Transmit(unsigned char data)
 /* Wait for empty transmit buffer */
 while (!(UCSR0A & (1<<UDRE0)))
 ;
-/* Put data into buffer, sends the data */
+/* 
+*
+*Put data into buffer, sends the data 
+*
+*/
 UDR0 = data;
 }
 /*
@@ -60,12 +65,32 @@ UDR0 = data;
  */
 unsigned char USART_Receive(void)
 {
-/* Wait for data to be received */
+/* 
+*
+*Wait for data to be received 
+*
+*/
 while (!(UCSR0A & (1<<RXC0)))
 ;
-/* Get and return received data from buffer */
+  char status=UCSR0A;
+ if ((status & (FRAMING_ERROR | PARITY_ERROR | DATA_OVERRUN))==0){
+/*
+*
+*Get and return received data from buffer 
+*
+*/
 return UDR0;
 }
+else{
+  USART_puts("erreur !");
+}
+
+ }
+/*
+*
+*fonction pour ecrire un sting 
+*
+*/
 
 void USART_puts(unsigned char *str)
 {
@@ -82,22 +107,28 @@ USART_Transmit(13);
 
 
 ISR(USART_RX_vect){
-    flag =1;
-  }
+      char status=UCSR0A;
+ if ((status & (FRAMING_ERROR | PARITY_ERROR | DATA_OVERRUN))==0){
+flag = 1;
+receive = UDR0; 
+
+}
+else{
+  UDR0;
+  USART_putsln("erreur !");
+}
+}
 
 /*
  * prog
  *
  */
 int main() {
-  char *str = "iut";
     USART_Init(MYUBRR);
     sei();
     while(1){
-      USART_putsln("IUT");
-       _delay_ms(500);
     if(flag){
-      USART_Transmit(UDR0+1);
+      USART_Transmit(receive);
   flag = 0;
     }
   _delay_ms(1);
